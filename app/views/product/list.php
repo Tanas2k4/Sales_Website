@@ -14,8 +14,8 @@
             </h2>
 
             <?php if (!empty($product->image)): ?>
-                <img src="/Sales_Website/<?php echo htmlspecialchars($product->image, ENT_QUOTES, 'UTF-8'); ?>" 
-                     alt="Product Image" style="max-width: 100px;">
+                <img src="/Sales_Website/<?php echo htmlspecialchars($product->image, ENT_QUOTES, 'UTF-8'); ?>"
+                    alt="Product Image" style="max-width: 100px;">
             <?php endif; ?>
 
             <p><?php echo htmlspecialchars($product->description, ENT_QUOTES, 'UTF-8'); ?></p>
@@ -26,9 +26,11 @@
 
             <a href="/Sales_Website/Product/edit/<?php echo $product->id; ?>" class="btn btn-warning">Sửa</a>
 
-            <a href="/Sales_Website/Product/delete/<?php echo $product->id; ?>" 
-               class="btn btn-danger" 
-               onclick="return confirm('Bạn có chắc chắn muốn xóa sản phẩm này?');">Xóa</a>
+            <a href="/Sales_Website/Product/delete/<?php echo $product->id; ?>"
+                class="btn btn-danger"
+                onclick="return confirm('Bạn có chắc chắn muốn xóa sản phẩm này?');">Xóa</a>
+            <!-- Thêm nút thêm vào giỏ hàng -->
+            <a href="/Sales_Website/Product/addToCart/<?php echo $product->id; ?>" class="btn btn-primary">Thêm vào giỏ hàng</a>
         </li>
     <?php endforeach; ?>
 </ul>

@@ -1,5 +1,6 @@
 <?php
-// Require SessionHelper and other necessary files
+
+// Require necessary files
 require_once('app/config/database.php');
 require_once('app/models/ProductModel.php');
 require_once('app/models/CategoryModel.php');
@@ -15,14 +16,12 @@ class ProductController
         $this->productModel = new ProductModel($this->db);
     }
 
-    // Hiển thị danh sách sản phẩm
     public function index()
     {
         $products = $this->productModel->getProducts();
         include 'app/views/product/list.php';
     }
 
-    // Hiển thị chi tiết sản phẩm
     public function show($id)
     {
         $product = $this->productModel->getProductById($id);
@@ -33,14 +32,12 @@ class ProductController
         }
     }
 
-    // Hiển thị form thêm sản phẩm
     public function add()
     {
         $categories = (new CategoryModel($this->db))->getCategories();
         include_once 'app/views/product/add.php';
     }
 
-    // Lưu sản phẩm mới
     public function save()
     {
         if ($_SERVER['REQUEST_METHOD'] == 'POST') {
@@ -49,11 +46,9 @@ class ProductController
             $price = $_POST['price'] ?? '';
             $category_id = $_POST['category_id'] ?? null;
 
-            if (isset($_FILES['image']) && $_FILES['image']['error'] == 0) {
-                $image = $this->uploadImage($_FILES['image']);
-            } else {
-                $image = "";
-            }
+            $image = isset($_FILES['image']) && $_FILES['image']['error'] == 0
+                ? $this->uploadImage($_FILES['image'])
+                : "";
 
             $result = $this->productModel->addProduct($name, $description, $price, $category_id, $image);
 
@@ -63,12 +58,10 @@ class ProductController
                 include 'app/views/product/add.php';
             } else {
                 header('Location: /Sales_Website/Product');
-                exit();
             }
         }
     }
 
-    // Hiển thị form chỉnh sửa sản phẩm
     public function edit($id)
     {
         $product = $this->productModel->getProductById($id);
@@ -81,7 +74,6 @@ class ProductController
         }
     }
 
-    // Cập nhật sản phẩm
     public function update()
     {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -91,65 +83,52 @@ class ProductController
             $price = $_POST['price'];
             $category_id = $_POST['category_id'];
 
-            if (isset($_FILES['image']) && $_FILES['image']['error'] == 0) {
-                $image = $this->uploadImage($_FILES['image']);
-            } else {
-                $image = $_POST['existing_image'];
-            }
+            $image = isset($_FILES['image']) && $_FILES['image']['error'] == 0
+                ? $this->uploadImage($_FILES['image'])
+                : $_POST['existing_image'];
 
             $edit = $this->productModel->updateProduct($id, $name, $description, $price, $category_id, $image);
 
             if ($edit) {
                 header('Location: /Sales_Website/Product');
-                exit();
             } else {
                 echo "Đã xảy ra lỗi khi lưu sản phẩm.";
             }
         }
     }
 
-    // Xóa sản phẩm
     public function delete($id)
     {
         if ($this->productModel->deleteProduct($id)) {
             header('Location: /Sales_Website/Product');
-            exit();
         } else {
             echo "Đã xảy ra lỗi khi xóa sản phẩm.";
         }
     }
 
-    // Xử lý upload hình ảnh
     private function uploadImage($file)
     {
         $target_dir = "uploads/";
-
-        // Kiểm tra và tạo thư mục nếu chưa tồn tại
         if (!is_dir($target_dir)) {
             mkdir($target_dir, 0777, true);
         }
 
         $target_file = $target_dir . basename($file["name"]);
         $imageFileType = strtolower(pathinfo($target_file, PATHINFO_EXTENSION));
-
-        // Kiểm tra xem file có phải là hình ảnh không
         $check = getimagesize($file["tmp_name"]);
+
         if ($check === false) {
             throw new Exception("File không phải là hình ảnh.");
         }
 
-        // Kiểm tra kích thước file (10 MB = 10 * 1024 * 1024 bytes)
         if ($file["size"] > 10 * 1024 * 1024) {
             throw new Exception("Hình ảnh có kích thước quá lớn.");
         }
 
-        // Chỉ cho phép một số định dạng hình ảnh nhất định
-        $allowed_types = ["jpg", "jpeg", "png", "gif"];
-        if (!in_array($imageFileType, $allowed_types)) {
+        if (!in_array($imageFileType, ["jpg", "png", "jpeg", "gif"])) {
             throw new Exception("Chỉ cho phép các định dạng JPG, JPEG, PNG và GIF.");
         }
 
-        // Lưu file
         if (!move_uploaded_file($file["tmp_name"], $target_file)) {
             throw new Exception("Có lỗi xảy ra khi tải lên hình ảnh.");
         }
@@ -157,7 +136,6 @@ class ProductController
         return $target_file;
     }
 
-    // Thêm sản phẩm vào giỏ hàng
     public function addToCart($id)
     {
         $product = $this->productModel->getProductById($id);
@@ -182,7 +160,49 @@ class ProductController
         }
 
         header('Location: /Sales_Website/Product/cart');
-        exit();
+    }
+
+    public function cart()
+    {
+        $cart = $_SESSION['cart'] ?? [];
+        include 'app/views/product/cart.php';
+    }
+
+    public function checkout()
+    {
+        include 'app/views/product/checkout.php';
+    }
+
+    public function processCheckout()
+    {
+        if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+            $name = $_POST['name'];
+            $phone = $_POST['phone'];
+            $address = $_POST['address'];
+
+            if (empty($_SESSION['cart'])) {
+                echo "Giỏ hàng trống.";
+                return;
+            }
+
+            $this->db->beginTransaction();
+            try {
+                $stmt = $this->db->prepare("INSERT INTO orders (name, phone, address) VALUES (:name, :phone, :address)");
+                $stmt->execute([':name' => $name, ':phone' => $phone, ':address' => $address]);
+                $order_id = $this->db->lastInsertId();
+
+                foreach ($_SESSION['cart'] as $product_id => $item) {
+                    $stmt = $this->db->prepare("INSERT INTO order_details (order_id, product_id, quantity, price) VALUES (:order_id, :product_id, :quantity, :price)");
+                    $stmt->execute([':order_id' => $order_id, ':product_id' => $product_id, ':quantity' => $item['quantity'], ':price' => $item['price']]);
+                }
+
+                unset($_SESSION['cart']);
+                $this->db->commit();
+                header('Location: /Sales_Website/Product/orderConfirmation');
+            } catch (Exception $e) {
+                $this->db->rollBack();
+                echo "Đã xảy ra lỗi khi xử lý đơn hàng: " . $e->getMessage();
+            }
+        }
     }
 }
-?>
