@@ -26,6 +26,30 @@
                     <a class="nav-link" href="/Sales_Website/Product/add">Thêm sản
                         phẩm</a>
                 </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/Sales_Website/Product/cart">Giỏ hàng
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <?php
+                    if (SessionHelper::isLoggedIn()) {
+                        echo "<a class='nav-link'>" . $_SESSION['username'] . "</a>";
+                    } else {
+                        echo "<a class='nav-link'
+                        href='/Sales_Website/account/login'>Login</a>";
+                    }
+                    ?>
+                </li>
+                <li class="nav-item">
+                    </a>
+                    <?php
+
+                    if (SessionHelper::isLoggedIn()) {
+                        echo "<a class='nav-link' 
+                        href='/Sales_Website/account/logout'>Logout</a>";
+                    }
+                    ?>
+                </li>
             </ul>
         </div>
     </nav>

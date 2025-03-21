@@ -205,4 +205,10 @@ class ProductController
             }
         }
     }
+
+    //Thêm function logic trỏ đến orderConfirmation
+    public function orderConfirmation()
+    {
+        include 'app/views/product/orderConfirmation.php';
+    }
 }
